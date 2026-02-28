@@ -43,11 +43,27 @@ func executeTriggerHandler(
 	ts *TriggerSystem,
 	logPrefix string,
 ) error {
-	// TODO: Requires YAMLDefinedTool — will be enabled once yaml_defined_tool.go is ported.
-	if logger != nil {
-		logger.Warnf("%s trigger handler for %s.%s called but YAMLDefinedTool not yet available", logPrefix, tool.Name, function.Name)
+	ydt := NewYAMLDefinedTool(
+		inputFulfiller,
+		tool,
+		function,
+		ts.toolEngine.ExecutionTracker(),
+		replacer,
+		ts.toolEngine,
+		ts.toolEngine.GetWorkflowInitiator(),
+	)
+
+	logger.Infof("%s trigger handler: executing %s.%s", logPrefix, tool.Name, function.Name)
+
+	result, err := ydt.Call(ctx, "")
+	if err != nil {
+		logger.Errorf("%s trigger handler: %s.%s failed: %v", logPrefix, tool.Name, function.Name, err)
+		Callback(ctx, tool.Name, "", err)
+		return err
 	}
-	return fmt.Errorf("%s trigger handler: YAMLDefinedTool not yet implemented", logPrefix)
+
+	Callback(ctx, tool.Name, result, nil)
+	return nil
 }
 
 // -----------------------------------------------------------------------
@@ -101,12 +117,27 @@ func executeSyntheticTriggerHandler(
 	stepKey := uuid.New().String()
 	ctx = context.WithValue(ctx, StepKeyInContextKey, stepKey)
 
-	// TODO: Requires YAMLDefinedTool — will be enabled once yaml_defined_tool.go is ported.
-	_ = stepKey // suppress unused warning
-	if logger != nil {
-		logger.Warnf("%s synthetic trigger handler for %s.%s called but YAMLDefinedTool not yet available", logPrefix, tool.Name, function.Name)
+	ydt := NewYAMLDefinedTool(
+		inputFulfiller,
+		tool,
+		function,
+		ts.toolEngine.ExecutionTracker(),
+		replacer,
+		ts.toolEngine,
+		ts.toolEngine.GetWorkflowInitiator(),
+	)
+
+	logger.Infof("%s synthetic trigger handler: executing %s.%s (stepKey=%s)", logPrefix, tool.Name, function.Name, stepKey)
+
+	result, err := ydt.Call(ctx, "")
+	if err != nil {
+		logger.Errorf("%s synthetic trigger handler: %s.%s failed: %v", logPrefix, tool.Name, function.Name, err)
+		Callback(ctx, tool.Name, "", err)
+		return err
 	}
-	return fmt.Errorf("%s synthetic trigger handler: YAMLDefinedTool not yet implemented", logPrefix)
+
+	Callback(ctx, tool.Name, result, nil)
+	return nil
 }
 
 // -----------------------------------------------------------------------

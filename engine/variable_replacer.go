@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	tool_engine_models "github.com/bbiangul/mantis-skill/engine/models"
 	"github.com/bbiangul/mantis-skill/skill"
 	"github.com/google/uuid"
 )
@@ -100,28 +101,13 @@ type variableReplacerMessageCounter interface {
 	CountUserMessages(ctx context.Context, userID string) (int, error)
 }
 
-// LoopContext represents the context for a forEach loop iteration.
-// Mirrors models.LoopContext to avoid the engine -> engine/models -> engine cycle.
-type LoopContext struct {
-	IndexVar string
-	ItemVar  string
-	Index    int
-	Item     interface{}
-	Result   interface{} // Result of the current iteration (available in waitFor)
-}
+// LoopContext is a type alias for models.LoopContext so that VariableReplacer
+// satisfies models.IVariableReplacer without creating an import cycle.
+type LoopContext = tool_engine_models.LoopContext
 
-// ReplaceOptions configures variable replacement behavior.
-// Mirrors models.ReplaceOptions to avoid the import cycle.
-type ReplaceOptions struct {
-	// DBContext controls NULL handling: true = SQL NULL keyword, false = empty string
-	DBContext bool
-	// KeepUnresolvedPlaceholders controls what happens when a variable path doesn't exist:
-	// - false (default): unresolved $var becomes "" (empty string) - safe for API calls
-	// - true: unresolved $var stays as "$var" - useful for LLM prompts where readability matters
-	KeepUnresolvedPlaceholders bool
-	// ShellEscape escapes single quotes in replaced values for safe embedding in bash scripts.
-	ShellEscape bool
-}
+// ReplaceOptions is a type alias for models.ReplaceOptions so that
+// VariableReplacer satisfies models.IVariableReplacer.
+type ReplaceOptions = tool_engine_models.ReplaceOptions
 
 // ---------------------------------------------------------------------------
 // Package-level compiled regexes for performance (avoid recompilation in loops)
@@ -139,6 +125,9 @@ func shellEscapeValue(s string) string {
 // ---------------------------------------------------------------------------
 // VariableReplacer
 // ---------------------------------------------------------------------------
+
+// Ensure VariableReplacer satisfies models.IVariableReplacer at compile time.
+var _ tool_engine_models.IVariableReplacer = (*VariableReplacer)(nil)
 
 // VariableReplacer handles the substitution of variables in strings.
 type VariableReplacer struct {

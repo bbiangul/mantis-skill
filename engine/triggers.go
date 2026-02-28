@@ -6,35 +6,33 @@ import (
 	"sync"
 	"time"
 
+	tool_engine_models "github.com/bbiangul/mantis-skill/engine/models"
 	"github.com/bbiangul/mantis-skill/skill"
 	"github.com/robfig/cron/v3"
 )
 
 // -----------------------------------------------------------------------
-// Narrow interfaces — only the methods the trigger system actually needs.
-// These are structurally compatible with engine/models.IToolEngine etc.,
-// so any concrete type that satisfies the full interface also satisfies these.
-// Defined here to avoid an import cycle (engine -> engine/models -> engine).
+// Trigger-facing type aliases — these are the same types as the model
+// interfaces, re-exported under shorter names for convenience.
+// Using aliases (=) instead of new types ensures that the concrete
+// ToolEngine satisfies both TriggerToolEngine and IToolEngine without
+// conflicting method signatures.
 // -----------------------------------------------------------------------
 
-// TriggerToolEngine is the subset of IToolEngine used by the trigger system.
-type TriggerToolEngine interface {
-	GetAllTools() []skill.Tool
-	ExecutionTracker() TriggerExecutionTracker
-	GetWorkflowInitiator() TriggerWorkflowInitiator
-}
+// TriggerToolEngine is IToolEngine, used by the trigger system.
+type TriggerToolEngine = tool_engine_models.IToolEngine
 
-// TriggerExecutionTracker is the subset of IFunctionExecutionTracker needed by triggers.
-type TriggerExecutionTracker interface{}
+// TriggerExecutionTracker is IFunctionExecutionTracker for triggers.
+type TriggerExecutionTracker = tool_engine_models.IFunctionExecutionTracker
 
-// TriggerWorkflowInitiator is the subset of IWorkflowInitiator needed by triggers.
-type TriggerWorkflowInitiator interface{}
+// TriggerWorkflowInitiator is IWorkflowInitiator for triggers.
+type TriggerWorkflowInitiator = tool_engine_models.IWorkflowInitiator
 
-// TriggerVariableReplacer is the subset of IVariableReplacer used by triggers.
-type TriggerVariableReplacer interface{}
+// TriggerVariableReplacer is IVariableReplacer for triggers.
+type TriggerVariableReplacer = tool_engine_models.IVariableReplacer
 
-// TriggerInputFulfiller is the subset of IInputFulfiller used by triggers.
-type TriggerInputFulfiller interface{}
+// TriggerInputFulfiller is IInputFulfiller for triggers.
+type TriggerInputFulfiller = tool_engine_models.IInputFulfiller
 
 // TriggerAgenticCallback is the subset of AgenticWorkflowCallback used by triggers.
 type TriggerAgenticCallback interface {
@@ -60,6 +58,39 @@ const (
 
 	// StepKeyInContextKey carries the unique step key for execution tracking.
 	StepKeyInContextKey contextKeyType = "stepKeyInContextKey"
+
+	// MessageLanguageInContextKey carries the detected language of the user message.
+	MessageLanguageInContextKey contextKeyType = "messageLanguage"
+
+	// MemoryFiltersInContextKey carries memory query filters.
+	MemoryFiltersInContextKey contextKeyType = "memoryFilters"
+
+	// ClientIdsInContextKey carries client IDs for customer service chat queries.
+	ClientIdsInContextKey contextKeyType = "clientIds"
+
+	// CodebaseDirsInContextKey carries codebase directory paths for code search.
+	CodebaseDirsInContextKey contextKeyType = "codebaseDirs"
+
+	// DocumentDbNameInContextKey carries the document database name.
+	DocumentDbNameInContextKey contextKeyType = "documentDbName"
+
+	// DocumentEnableGraphInContextKey carries whether to enable graph search for documents.
+	DocumentEnableGraphInContextKey contextKeyType = "documentEnableGraph"
+
+	// InputFulfillerInContextKey carries the input fulfiller.
+	InputFulfillerInContextKey contextKeyType = "inputFulfiller"
+
+	// ToolEngineInContextKey carries the tool engine.
+	ToolEngineInContextKey contextKeyType = "toolEngine"
+
+	// InitiateWorkflowOriginContextKey marks that a function was called from an initiate_workflow.
+	InitiateWorkflowOriginContextKey contextKeyType = "initiateWorkflowOrigin"
+
+	// ConversationHistoryInContextKey carries the conversation history ([]threadMessage).
+	ConversationHistoryInContextKey contextKeyType = "conversationHistory"
+
+	// ConversationTypeInContextKey carries the conversation type string.
+	ConversationTypeInContextKey contextKeyType = "conversationType"
 )
 
 // -----------------------------------------------------------------------
@@ -75,7 +106,7 @@ var MeetingContextKey = meetingContextKeyType{}
 // MeetingContext holds meeting event information for $MEETING variable.
 type MeetingContext struct {
 	BotID     string
-	Event     string    // "start" or "end"
+	Event     string // "start" or "end"
 	Timestamp time.Time
 }
 
@@ -169,13 +200,13 @@ type ActiveExecution struct {
 
 // NewTriggerSystem creates a new TriggerSystem.
 func NewTriggerSystem(toolEngine TriggerToolEngine, variableReplacer TriggerVariableReplacer, inputFulfiller TriggerInputFulfiller) (*TriggerSystem, error) {
-	if &toolEngine == nil {
+	if toolEngine == nil {
 		return nil, fmt.Errorf("toolEngine cannot be nil")
 	}
 	if variableReplacer == nil {
 		return nil, fmt.Errorf("variableReplacer cannot be nil")
 	}
-	if &inputFulfiller == nil {
+	if inputFulfiller == nil {
 		return nil, fmt.Errorf("inputFulfiller cannot be nil")
 	}
 

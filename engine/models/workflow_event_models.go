@@ -15,11 +15,25 @@ import (
 // for event querying. Value is []string of function names to include.
 const FilteredFunctionsInContextKey = "filteredFunctionsInContextKey"
 
-// Package-level logger (set by the engine at init time)
-var logger types.Logger
+// noopLogger discards all log output (default when SetLogger is not called).
+type noopLogger struct{}
 
-// SetLogger sets the package-level logger
+func (noopLogger) Debugf(string, ...interface{})                    {}
+func (noopLogger) Infof(string, ...interface{})                     {}
+func (noopLogger) Warnf(string, ...interface{})                     {}
+func (noopLogger) Errorf(string, ...interface{})                    {}
+func (n noopLogger) WithError(error) types.Logger                   { return n }
+func (n noopLogger) WithFields(map[string]interface{}) types.Logger { return n }
+
+// Package-level logger — defaults to no-op so callers never panic.
+var logger types.Logger = noopLogger{}
+
+// SetLogger sets the package-level logger.
 func SetLogger(l types.Logger) {
+	if l == nil {
+		logger = noopLogger{}
+		return
+	}
 	logger = l
 }
 
