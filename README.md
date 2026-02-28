@@ -2,7 +2,7 @@
 
 A declarative YAML-based tool definition framework for building AI agent capabilities. Define what your tools do — not how to wire them — and let the engine handle execution, input resolution, variable replacement, output formatting, and workflow orchestration.
 
-Mantis Skill powers production AI agents that handle thousands of conversations daily. It was extracted from the [ConnectAI](https://github.com/bbiangul) agent platform and open-sourced as a standalone Go library.
+Mantis Skill powers production AI agents that handle thousands of conversations daily and hundreds of thousands of tool calls, with a rich feature set covering API calls, database queries, terminal commands, code execution, browser automation, and more - in a reliable manner. 
 
 ## Why Mantis Skill?
 
@@ -29,7 +29,7 @@ tools:
           value: "$result[1].forecast"
 ```
 
-No Go code. No HTTP client setup. No input parsing. The engine handles it.
+No code. No HTTP client setup. No input parsing. The engine handles it.
 
 ## Features
 
